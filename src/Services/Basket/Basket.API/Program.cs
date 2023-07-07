@@ -1,6 +1,7 @@
 using Basket.API.gRPCServices;
 using Basket.API.Repositories;
 using Discount.Grpc.Protos;
+using MassTransit;
 
 namespace Basket.API
 {
@@ -26,11 +27,20 @@ namespace Basket.API
 
             
             builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+            builder.Services.AddAutoMapper(typeof(Program));
             
             builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>
                 (o => o.Address = new Uri(builder.Configuration["gRPCSettings:DiscountURL"]));
 
             builder.Services.AddScoped<DiscountgRPCService>();
+
+            builder.Services.AddMassTransit(config => {
+                config.UsingRabbitMq((ctx, cfg) =>
+                {
+                    cfg.Host(builder.Configuration["EventBusSettings:HostAddress"]);
+                });
+            });
+
 
             var app = builder.Build();
 
